@@ -93,13 +93,25 @@ var runCmd = &cli.Command{
 
 func loadCredentials(p string) (*oauth1a.ClientConfig, *oauth1a.UserConfig, error) {
 	creds, err := ioutil.ReadFile(p)
-	if err != nil {
-		return nil, nil, err
+	if err == nil {
+		lines := strings.Split(string(creds), "\n")
+		c := &oauth1a.ClientConfig{ConsumerKey: lines[0], ConsumerSecret: lines[1]}
+		u := oauth1a.NewAuthorizedConfig(lines[2], lines[3])
+		return c, u, nil
 	}
-	lines := strings.Split(string(creds), "\n")
-	c := &oauth1a.ClientConfig{ConsumerKey: lines[0], ConsumerSecret: lines[1]}
-	u := oauth1a.NewAuthorizedConfig(lines[2], lines[3])
-	return c, u, nil
+
+	apiKey := os.Getenv("TWITTER_API_KEY")
+	apiSecret := os.Getenv("TWITTER_API_SECRET")
+	accessToken := os.Getenv("TWITTER_ACCESS_TOKEN")
+	accessTokenSecret := os.Getenv("TWITTER_ACCESS_TOKEN_SECRET")
+
+	if apiKey != "" && apiSecret != "" && accessToken != "" && accessTokenSecret != "" {
+		c := &oauth1a.ClientConfig{ConsumerKey: apiKey, ConsumerSecret: apiSecret}
+		u := oauth1a.NewAuthorizedConfig(accessToken, accessTokenSecret)
+		return c, u, nil
+	}
+
+	return nil, nil, err
 }
 
 func watch(ctx context.Context, c client.Watcher, twc *twittergo.Client) {
